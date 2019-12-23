@@ -25,8 +25,8 @@ public class Main {
         links.add("sina.cn");
         while (!links.isEmpty()) {
             String targetUrl = links.remove(links.size() - 1);
-            if(targetUrl.contains("\\")){
-                targetUrl = targetUrl.replace( "\\","");
+            if (targetUrl.contains("\\")) {
+                targetUrl = targetUrl.replace("\\", "");
             }
 
             // 查看这个URL是否已经被处理过
@@ -38,7 +38,7 @@ public class Main {
             if (targetUrl.contains("news.sina.cn")
                     || targetUrl.equals("sina.cn")) {
                 // 访问链接并解析
-                if(!targetUrl.contains("http")){
+                if (!targetUrl.contains("http")) {
                     targetUrl = "http://" + targetUrl;
                 }
                 HttpGet httpGet = new HttpGet(targetUrl);
@@ -64,7 +64,7 @@ public class Main {
 
                 Element rootElement = elements.get(0);
                 Element articleElement = rootElement.selectFirst("article");
-                if(articleElement != null) {
+                if (articleElement != null) {
                     String title = articleElement.text();
                     System.out.println(title);
                 }
