@@ -18,13 +18,13 @@ import static org.apache.http.impl.client.HttpClients.createDefault;
 public class Main {
     public static void main(String[] args) {
 
-        List<String> links = new ArrayList<>();
+        List<String> linkPool = new ArrayList<>();
         List<String> parsedLinks = new ArrayList<>();
 
         CloseableHttpClient httpclient = createDefault();
-        links.add("sina.cn");
-        while (!links.isEmpty()) {
-            String targetUrl = links.remove(links.size() - 1);
+        linkPool.add("sina.cn");
+        while (!linkPool.isEmpty()) {
+            String targetUrl = linkPool.remove(linkPool.size() - 1);
             targetUrl = removeBackslashInUrl(targetUrl);
 
             // 查看这个URL是否已经被处理过
@@ -35,17 +35,16 @@ public class Main {
             // 查看这个URL是否是我们想要的新闻页面
             if (isUsefulUrl(targetUrl)) {
 
-                Document document = parseUrlIfUseful(httpclient,targetUrl);
+                Document document = getAndParseUrl(httpclient, targetUrl);
 
-                List<Element> elements = document.getAllElements();
+                List<Element> links = document.select("a");
 
-                putLinkIntoLinks(links, elements);
+                links.stream().map(link -> link.attr("href"))
+                        .forEach(linkPool::add);
 
-                String title = getNewsData(elements);
+                //如果是新闻页面就存入数据库，否则就什么都不做
+                storeIntoDatabaseItIsNewsPage(document);
 
-                if(title != null) {
-                    System.out.println(title);
-                }
             }
 
             parsedLinks.add(targetUrl);
@@ -63,26 +62,16 @@ public class Main {
         return targetUrl;
     }
 
-    private static String getNewsData(List<Element> elements) {
-        String title = null;
-        Element rootElement = elements.get(0);
+    private static void storeIntoDatabaseItIsNewsPage(Document document) {
+        Element rootElement = document.getAllElements().get(0);
         Element articleElement = rootElement.selectFirst("article");
         if (articleElement != null) {
-            title = articleElement.text();
+            String title = articleElement.text();
+            System.out.println(title);
         }
-        return title;
     }
 
-    private static void putLinkIntoLinks(List<String> links, List<Element> elements) {
-        elements.forEach(element -> {
-            // 把新的a标签都放进链接池中
-            if (element.tagName().equals("a")) {
-                links.add(element.attr("href"));
-            }
-        });
-    }
-
-    private static Document parseUrlIfUseful(CloseableHttpClient httpclient, String targetUrl) {
+    private static Document getAndParseUrl(CloseableHttpClient httpclient, String targetUrl) {
         if (!targetUrl.contains("http")) {
             targetUrl = "http://" + targetUrl;
         }
@@ -96,8 +85,7 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Document document = Jsoup.parse(targetHtml);
-        return document;
+        return Jsoup.parse(targetHtml);
     }
 
     private static boolean isUsefulUrl(String targetUrl) {
