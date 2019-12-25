@@ -1,5 +1,6 @@
 package com.github.thoughtliuw;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -10,25 +11,44 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.io.IOException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.http.impl.client.HttpClients.createDefault;
 
 public class Main {
-    public static void main(String[] args) {
 
-        List<String> linkPool = new ArrayList<>();
-        List<String> parsedLinks = new ArrayList<>();
+    private static List<String> loadUrlsFromDB(Connection connection, String sql) throws SQLException {
+        List<String> linkList = new ArrayList<>();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            while (resultSet.next()) {
+                linkList.add(resultSet.getString("link"));
+            }
+        }
+        return linkList;
+    }
 
+    private static String getNextLinkAndDelete(Connection connection) throws SQLException {
+        String url = getNextLink(connection);
+        if (url != null) {
+            updateDatabase(connection, url, "delete from LINKS_TO_BE_PROCESSED where link = ?");
+        }
+        return url;
+    }
+
+    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
+    public static void main(String[] args) throws SQLException, ClassNotFoundException {
+//        Class.forName("org.h2.Driver");
+        Connection connection = DriverManager.getConnection("jdbc:h2:file:D:\\my_coding\\learn_backend\\crawler\\news", "root", "root");
         CloseableHttpClient httpclient = createDefault();
-        linkPool.add("sina.cn");
-        while (!linkPool.isEmpty()) {
-            String targetUrl = linkPool.remove(linkPool.size() - 1);
-            targetUrl = removeBackslashInUrl(targetUrl);
 
-            // 查看这个URL是否已经被处理过
-            if (checkIfUrlIsParsed(parsedLinks, targetUrl)) {
+        String targetUrl;
+        while ( (targetUrl = getNextLinkAndDelete(connection)) != null) {
+
+            // 查询数据库中是否已经处理过这条数据
+            if (checkIfUrlIsParsed(connection, "select * from LINKS_TO_BE_PROCESSED where link = ?")) {
                 continue;
             }
 
@@ -37,22 +57,61 @@ public class Main {
 
                 Document document = getAndParseUrl(httpclient, targetUrl);
 
-                List<Element> links = document.select("a");
+                // 把文档中的a标签的href都存入数据库
+                parseUrlsAndStoreIntoDB(connection, document);
 
-                links.stream().map(link -> link.attr("href"))
-                        .forEach(linkPool::add);
-
-                //如果是新闻页面就存入数据库，否则就什么都不做
+                //如果是新闻页面就存入数据库的新闻表中，否则就什么都不做
                 storeIntoDatabaseItIsNewsPage(document);
 
             }
 
-            parsedLinks.add(targetUrl);
+            // 向数据库已处理链接表中插入数据
+            updateDatabase(connection, targetUrl, "insert into LINKS_TO_BE_PROCESSED values(?)");
         }
     }
 
-    private static boolean checkIfUrlIsParsed(List<String> parsedLinks, String targetUrl) {
-        return parsedLinks.contains(targetUrl);
+    private static void parseUrlsAndStoreIntoDB(Connection connection, Document document) throws SQLException {
+        List<Element> links = document.select("a");
+
+        // 将链接放入待处理数据库链接池中
+        for (Element link : links) {
+            String href = link.attr("href");
+            updateDatabase(connection, href, "insert into LINKS_TO_BE_PROCESSED values(?)");
+        }
+    }
+
+    private static void updateDatabase(Connection connection, String param1, String s) throws SQLException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(s)) {
+            preparedStatement.setString(1, param1);
+            preparedStatement.executeUpdate();
+        }
+    }
+
+    private static String getNextLink(Connection connection) throws SQLException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement("select * from LINKS_TO_BE_PROCESSED limit 1");
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            if (resultSet.next()) {
+                return resultSet.getString("link");
+            }
+        }
+        return null;
+    }
+
+
+    private static boolean checkIfUrlIsParsed(Connection connection, String sql) throws SQLException {
+        ResultSet resultSet = null;
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, sql);
+            resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return true;
+            }
+        } finally {
+            if (resultSet != null) {
+                resultSet.close();
+            }
+        }
+        return false;
     }
 
     private static String removeBackslashInUrl(String targetUrl) {
@@ -75,6 +134,9 @@ public class Main {
         if (!targetUrl.contains("http")) {
             targetUrl = "http://" + targetUrl;
         }
+
+        targetUrl = removeBackslashInUrl(targetUrl);
+
         HttpGet httpGet = new HttpGet(targetUrl);
         String targetHtml = null;
         try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
