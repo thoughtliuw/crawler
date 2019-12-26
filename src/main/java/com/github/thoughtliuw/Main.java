@@ -14,21 +14,11 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.http.impl.client.HttpClients.createDefault;
 
 public class Main {
-
-    private static List<String> loadUrlsFromDB(Connection connection, String sql) throws SQLException {
-        List<String> linkList = new ArrayList<>();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
-             ResultSet resultSet = preparedStatement.executeQuery()) {
-            while (resultSet.next()) {
-                linkList.add(resultSet.getString("link"));
-            }
-        }
-        return linkList;
-    }
 
     private static String getNextLinkAndDelete(Connection connection) throws SQLException {
         String url = getNextLink(connection);
@@ -39,13 +29,13 @@ public class Main {
     }
 
     @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
-    public static void main(String[] args) throws SQLException, ClassNotFoundException {
+    public static void main(String[] args) throws SQLException, IOException {
 //        Class.forName("org.h2.Driver");
-        Connection connection = DriverManager.getConnection("jdbc:h2:file:D:\\my_coding\\learn_backend\\crawler\\news", "root", "root");
+        Connection connection = DriverManager.getConnection("jdbc:h2:file:./news", "root", "root");
         CloseableHttpClient httpclient = createDefault();
 
         String targetUrl;
-        while ( (targetUrl = getNextLinkAndDelete(connection)) != null) {
+        while ((targetUrl = getNextLinkAndDelete(connection)) != null) {
 
             // 查询数据库中是否已经处理过这条数据
             if (checkIfUrlIsParsed(connection, "select * from LINKS_TO_BE_PROCESSED where link = ?")) {
@@ -61,7 +51,7 @@ public class Main {
                 parseUrlsAndStoreIntoDB(connection, document);
 
                 //如果是新闻页面就存入数据库的新闻表中，否则就什么都不做
-                storeIntoDatabaseItIsNewsPage(document);
+                storeIntoDatabaseItIsNewsPage(connection, targetUrl, document);
 
             }
 
@@ -121,16 +111,23 @@ public class Main {
         return targetUrl;
     }
 
-    private static void storeIntoDatabaseItIsNewsPage(Document document) {
+    private static void storeIntoDatabaseItIsNewsPage(Connection connection, String url, Document document) throws SQLException {
         Element rootElement = document.getAllElements().get(0);
         Element articleElement = rootElement.selectFirst("article");
         if (articleElement != null) {
-            String title = articleElement.text();
-            System.out.println(title);
+            String title = articleElement.selectFirst("h1").text();
+            ArrayList<Element> contentEls = articleElement.selectFirst(".art_content").select(".art_p");
+            String content = contentEls.stream().map(Element::text).collect(Collectors.joining("\n"));
+            try (PreparedStatement preparedStatement = connection.prepareStatement("insert into news(title,content,url,createAt,updateAt) values (?,?,?,now(),now())")) {
+                preparedStatement.setString(1, title);
+                preparedStatement.setString(2, content);
+                preparedStatement.setString(3, url);
+                preparedStatement.executeUpdate();
+            }
         }
     }
 
-    private static Document getAndParseUrl(CloseableHttpClient httpclient, String targetUrl) {
+    private static Document getAndParseUrl(CloseableHttpClient httpclient, String targetUrl) throws IOException {
         if (!targetUrl.contains("http")) {
             targetUrl = "http://" + targetUrl;
         }
@@ -138,14 +135,11 @@ public class Main {
         targetUrl = removeBackslashInUrl(targetUrl);
 
         HttpGet httpGet = new HttpGet(targetUrl);
-        String targetHtml = null;
+        String targetHtml;
         try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
             System.out.println(targetUrl);
-            System.out.println(response1.getStatusLine());
             HttpEntity entity1 = response1.getEntity();
             targetHtml = EntityUtils.toString(entity1);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return Jsoup.parse(targetHtml);
     }
