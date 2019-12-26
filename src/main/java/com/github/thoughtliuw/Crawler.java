@@ -19,7 +19,7 @@ import static org.apache.http.impl.client.HttpClients.createDefault;
 
 public class Crawler {
 
-    private Dao dao = new Dao();
+    private Dao dao = new JdbcDao();
 
     public void run() throws SQLException, IOException {
         CloseableHttpClient httpclient = createDefault();
