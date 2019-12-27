@@ -1,5 +1,6 @@
 package com.github.thoughtliuw;
 
+import com.github.thoughtliuw.mybatisDao.MybatisDao;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -46,7 +47,7 @@ public class Crawler {
             }
 
             // 向数据库已处理链接池中插入数据
-            dao.updateDatabase(targetUrl, "insert into LINKS_ALREADY_PROCESSED values(?)");
+            dao.insertLinksAlreadyProcessed(targetUrl);
         }
     }
 
@@ -102,10 +103,10 @@ public class Crawler {
             String url = href;
             if (url.startsWith("//")) {
                 url = "https:" + href;
-                url = removeBackslashInUrl(url);
             }
+            url = removeBackslashInUrl(url);
             if (!href.startsWith("javascript")) {
-                dao.updateDatabase(url, "insert into LINKS_TO_BE_PROCESSED values(?)");
+                dao.insertLinksTobeProcessed(url);
             }
         }
     }

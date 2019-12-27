@@ -4,7 +4,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.sql.*;
 
-public class JdbcDao implements Dao{
+public class JdbcDao implements Dao {
 
     private static final String USERNAME = "root";
     private static final String PASSWORD = "root";
@@ -19,10 +19,9 @@ public class JdbcDao implements Dao{
         }
     }
 
-
-    public void updateDatabase(String param1, String s) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(s)) {
-            preparedStatement.setString(1, param1);
+    public void updateDatabase(String url, String sql) throws SQLException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, url);
             preparedStatement.executeUpdate();
         }
     }
@@ -37,6 +36,17 @@ public class JdbcDao implements Dao{
         return null;
     }
 
+    @Override
+    public void insertLinksTobeProcessed(String url) throws SQLException {
+        updateDatabase(url, "insert into LINKS_TO_BE_PROCESSED values(?)");
+    }
+
+    @Override
+    public void insertLinksAlreadyProcessed(String url) throws SQLException {
+        updateDatabase(url, "insert into LINKS_ALREADY_PROCESSED values(?)");
+    }
+
+    @Override
     public boolean checkIfUrlIsParsed(String sql) throws SQLException {
         ResultSet resultSet = null;
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -53,6 +63,7 @@ public class JdbcDao implements Dao{
         return false;
     }
 
+    @Override
     public String getNextLinkAndDelete() throws SQLException {
         String url = getNextLink();
         if (url != null) {
@@ -61,6 +72,7 @@ public class JdbcDao implements Dao{
         return url;
     }
 
+    @Override
     public void storeNewsIntoDataBase(String url, String title, String content) throws SQLException {
         try (PreparedStatement preparedStatement = connection.prepareStatement("insert into news(title,content,url,createAt,updateAt) values (?,?,?,now(),now())")) {
             preparedStatement.setString(1, title);
@@ -69,6 +81,4 @@ public class JdbcDao implements Dao{
             preparedStatement.executeUpdate();
         }
     }
-
-
 }
