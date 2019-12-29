@@ -12,4 +12,3 @@ create table NEWS(
                      createAt timestamp,
                      updateAt timestamp
 );
-insert into LINKS_TO_BE_PROCESSED VALUES('sina.cn');

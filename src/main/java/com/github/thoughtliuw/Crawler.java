@@ -20,7 +20,7 @@ import static org.apache.http.impl.client.HttpClients.createDefault;
 
 public class Crawler {
 
-    private Dao dao = new JdbcDao();
+    private Dao dao = new MybatisDao();
 
     public void run() throws SQLException, IOException {
         CloseableHttpClient httpclient = createDefault();
@@ -86,7 +86,7 @@ public class Crawler {
     }
 
     private boolean isInitPage(String targetUrl) {
-        return targetUrl.equals("sina.cn");
+        return targetUrl.equals("https://sina.cn");
     }
 
     private boolean isNewsPage(String targetUrl) {
@@ -105,7 +105,7 @@ public class Crawler {
                 url = "https:" + href;
             }
             url = removeBackslashInUrl(url);
-            if (!href.startsWith("javascript")) {
+            if (!href.toLowerCase().startsWith("javascript")) {
                 dao.insertLinksTobeProcessed(url);
             }
         }
