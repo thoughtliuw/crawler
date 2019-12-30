@@ -1,14 +1,13 @@
 package com.github.thoughtliuw;
 
-import java.io.IOException;
-import java.sql.SQLException;
+import com.github.thoughtliuw.mybatisDao.MybatisDao;
 
 public class Main {
     public static void main(String[] args) {
-        try {
-            new Crawler().run();
-        } catch (SQLException | IOException e) {
-            e.printStackTrace();
+        Dao dao = new MybatisDao();
+
+        for (int i = 0; i < 10; i++) {
+            new Thread(new Crawler(dao)).start();
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.github.thoughtliuw;
 
-import com.github.thoughtliuw.mybatisDao.MybatisDao;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -18,36 +17,45 @@ import java.util.stream.Collectors;
 
 import static org.apache.http.impl.client.HttpClients.createDefault;
 
-public class Crawler {
+public class Crawler implements Runnable {
 
-    private Dao dao = new MybatisDao();
+    private Dao dao;
 
-    public void run() throws SQLException, IOException {
-        CloseableHttpClient httpclient = createDefault();
+    public Crawler(Dao dao) {
+        this.dao = dao;
+    }
 
-        String targetUrl;
-        while ((targetUrl = dao.getNextLinkAndDelete()) != null) {
+    @Override
+    public void run() {
+        try {
+            CloseableHttpClient httpclient = createDefault();
 
-            // 查询数据库中是否已经处理过这条数据
-            if (dao.checkIfUrlIsParsed("select * from LINKS_ALREADY_PROCESSED where link = ?")) {
-                continue;
+            String targetUrl;
+            while ((targetUrl = dao.getNextLinkAndDelete()) != null) {
+
+                // 查询数据库中是否已经处理过这条数据
+                if (dao.checkIfUrlIsParsed("select * from LINKS_ALREADY_PROCESSED where link = ?")) {
+                    continue;
+                }
+
+                // 查看这个URL是否是我们想要的新闻页面
+                if (isUsefulUrl(targetUrl)) {
+
+                    Document document = getAndParseUrl(httpclient, targetUrl);
+
+                    // 把文档中的a标签的href都存入数据库
+                    parseLinksAndStoreIntoDBLinks(document);
+
+                    //如果是新闻页面就存入数据库的新闻表中，否则就什么都不做
+                    storeIntoDatabaseItIsNewsPage(targetUrl, document);
+
+                }
+
+                // 向数据库已处理链接池中插入数据
+                dao.insertLinksAlreadyProcessed(targetUrl);
             }
-
-            // 查看这个URL是否是我们想要的新闻页面
-            if (isUsefulUrl(targetUrl)) {
-
-                Document document = getAndParseUrl(httpclient, targetUrl);
-
-                // 把文档中的a标签的href都存入数据库
-                parseLinksAndStoreIntoDBLinks(document);
-
-                //如果是新闻页面就存入数据库的新闻表中，否则就什么都不做
-                storeIntoDatabaseItIsNewsPage(targetUrl, document);
-
-            }
-
-            // 向数据库已处理链接池中插入数据
-            dao.insertLinksAlreadyProcessed(targetUrl);
+        } catch (SQLException | IOException e) {
+            e.printStackTrace();
         }
     }
 

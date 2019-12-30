@@ -51,7 +51,7 @@ public class MybatisDao implements Dao {
     }
 
     @Override
-    public String getNextLinkAndDelete() throws SQLException {
+    public synchronized String getNextLinkAndDelete() throws SQLException {
         String url;
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
             CrawlerMapper mapper = session.getMapper(CrawlerMapper.class);
