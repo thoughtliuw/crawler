@@ -1,6 +1,5 @@
 package com.github.thoughtliuw;
 
-import com.github.thoughtliuw.mybatisDao.MybatisDao;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -18,7 +17,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.http.impl.client.HttpClients.createDefault;
 
-public class Crawler implements Runnable{
+public class Crawler implements Runnable {
 
     private Dao dao;
 
@@ -27,8 +26,8 @@ public class Crawler implements Runnable{
     }
 
     @Override
-    public void run(){
-        try{
+    public void run() {
+        try {
             CloseableHttpClient httpclient = createDefault();
 
             String targetUrl;
