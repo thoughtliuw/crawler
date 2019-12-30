@@ -9,6 +9,6 @@ create table NEWS(
      title varchar(100),
      url varchar(1000),
      content text,
-     createAt timestamp default now(),
-     updateAt timestamp default now()
+     create_at timestamp default now(),
+     update_at timestamp default now()
 ) DEFAULT CHARSET=utf8;

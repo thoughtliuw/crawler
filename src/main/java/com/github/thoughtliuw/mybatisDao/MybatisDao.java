@@ -45,9 +45,9 @@ public class MybatisDao implements Dao {
     public boolean checkIfUrlIsParsed(String url) throws SQLException {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             CrawlerMapper mapper = session.getMapper(CrawlerMapper.class);
-            mapper.insertLinksPool(url, "LINKS_ALREADY_PROCESSED");
+            int count = mapper.countLink(url);
+            return count > 0;
         }
-        return false;
     }
 
     @Override

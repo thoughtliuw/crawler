@@ -16,12 +16,12 @@
      VALUES(#{url})
     </insert>
     <insert id="insertNews" parameterType="com.github.thoughtliuw.entity.News">
-        INSERT INTO NEWS(URL,TITLE,CONTENT,CREATEAT,UPDATEAT)
+        INSERT INTO NEWS(URL,TITLE,CONTENT,CREATE_AT,UPDATE_AT)
         VALUES(#{url},#{title},#{content},now(),now())
     </insert>
 
     <select id="countLink" resultType="int">
-        SELECT count from LINKS_ALREADY_PROCESSED where LINK = #{url}
+        SELECT count(1) from LINKS_ALREADY_PROCESSED where LINK = #{url}
     </select>
 
     <select id="getNextLink" resultType="string">
