@@ -49,7 +49,7 @@ public class ElasticSearchDataGenerator {
                 Map<String, Object> jsonMap = new HashMap<>();
                 jsonMap.put("title", news.getTitle());
                 String content = news.getContent();
-                jsonMap.put("content", content.length()>10?content.substring(0,10):content);
+                jsonMap.put("content", content.length() > 10 ? content.substring(0, 10) : content);
                 jsonMap.put("url", news.getUrl());
                 jsonMap.put("create_at", news.getCreateAt());
                 jsonMap.put("update_at", news.getUpdateAt());
