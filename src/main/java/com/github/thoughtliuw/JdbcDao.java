@@ -47,10 +47,10 @@ public class JdbcDao implements Dao {
     }
 
     @Override
-    public boolean checkIfUrlIsParsed(String sql) throws SQLException {
+    public boolean checkIfUrlIsParsed(String url) throws SQLException {
         ResultSet resultSet = null;
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, sql);
+        try (PreparedStatement preparedStatement = connection.prepareStatement("select * from LINKS_ALREADY_PROCESSED where link = ?")) {
+            preparedStatement.setString(1, url);
             resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 return true;
@@ -74,7 +74,7 @@ public class JdbcDao implements Dao {
 
     @Override
     public void storeNewsIntoDataBase(String url, String title, String content) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement("insert into news(title,content,url,createAt,updateAt) values (?,?,?,now(),now())")) {
+        try (PreparedStatement preparedStatement = connection.prepareStatement("insert into news(title,content,url,create_at,update_at) values (?,?,?,now(),now())")) {
             preparedStatement.setString(1, title);
             preparedStatement.setString(2, content);
             preparedStatement.setString(3, url);

@@ -34,7 +34,7 @@ public class Crawler implements Runnable {
             while ((targetUrl = dao.getNextLinkAndDelete()) != null) {
 
                 // 查询数据库中是否已经处理过这条数据
-                if (dao.checkIfUrlIsParsed("select * from LINKS_ALREADY_PROCESSED where link = ?")) {
+                if (dao.checkIfUrlIsParsed(targetUrl)) {
                     continue;
                 }
 

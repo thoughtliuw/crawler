@@ -7,7 +7,7 @@ public interface Dao {
 
     void insertLinksAlreadyProcessed(String url) throws SQLException;
 
-    boolean checkIfUrlIsParsed(String sql) throws SQLException;
+    boolean checkIfUrlIsParsed(String url) throws SQLException;
 
     String getNextLinkAndDelete() throws SQLException;
 
