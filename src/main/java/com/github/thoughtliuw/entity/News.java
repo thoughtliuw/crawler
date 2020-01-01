@@ -7,7 +7,6 @@ public class News {
     private String url;
     private String content;
     private Instant createAt;
-
     private Instant updateAt;
 
     public News() {
