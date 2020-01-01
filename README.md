@@ -14,7 +14,7 @@
 2. 使用索引，体会索引的作用，理解MySQL索引的最左匹配原则
 
 ## 进阶 - Elasticsearch
-1. 使用Elasticsearch创建亿级数据量，并体会Elasticsearch相比关系型数据库在大文本查询上的优势
+1. 使用Elasticsearch创建亿级数据量，并体会Elasticsearch相比关系型数据库在大文本查询上的优势  
 ps: 由于亿级数据太多，所以这里自己只是重点练习了一下使用Docker安装Elasticsearch，
 以及跟着文档简单的写了几个demo，对于Elasticsearch有了一个基本的了解  
 参考链接：[Elasticsearch Java API](https://www.elastic.co/guide/en/elasticsearch/client/java-rest/7.5/java-rest-high.html)  
